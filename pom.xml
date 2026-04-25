@@ -72,11 +72,19 @@
 		</dependency>
 
 
-		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>3.1.0</version>
-		</dependency>
-	</dependencies>
+    <distributionManagement>
+        <repository>
+            <id>maven-releases</id>
+            <name>maven Releases</name>
+            <url>http://100.54.135.231:8081//repository/maven-release/</url>
+        </repository>
+
+        <snapshotRepository>
+            <id>maven-snapshots</id>
+            <name>maven Snapshots</name>
+            <url>http://100.54.135.231:8081//repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
 </project>
 
