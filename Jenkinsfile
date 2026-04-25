@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        maven 'maven3'
-        jdk 'jdk8'
+        maven 'maven'     // ✅ fixed
+        jdk 'jdk21'       // ✅ fixed
     }
 
     environment {
@@ -15,10 +15,9 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/rajeshtutta/train_ticket_booking'
+                git branch: 'main', url: 'https://github.com/rajeshtutta/train_ticket_booking.git'
             }
         }
 
@@ -30,11 +29,16 @@ pipeline {
 
         stage('Deploy to Nexus') {
             steps {
-                configFileProvider([configFile(
-                    fileId: 'maven-settings-id',
-                    variable: 'MAVEN_SETTINGS'
+                withCredentials([usernamePassword(
+                    credentialsId: 'nexus-creds',
+                    usernameVariable: 'NEXUS_USER',
+                    passwordVariable: 'NEXUS_PASS'
                 )]) {
-                    sh 'mvn deploy -s $MAVEN_SETTINGS -DskipTests'
+                    sh '''
+                    mvn deploy -DskipTests \
+                    -Dnexus.username=$NEXUS_USER \
+                    -Dnexus.password=$NEXUS_PASS
+                    '''
                 }
             }
         }
@@ -43,7 +47,7 @@ pipeline {
             steps {
                 withSonarQubeEnv("${SONARQUBE_ENV}") {
                     sh '''
-                    mvn clean verify sonar:sonar \
+                    mvn sonar:sonar \
                     -Dsonar.projectKey=train-ticket \
                     -Dsonar.projectName=train-ticket
                     '''
@@ -53,7 +57,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 3, unit: 'MINUTES') {
+                timeout(time: 2, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -61,9 +65,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh '''
-                docker build -t $DOCKER_IMAGE:latest .
-                '''
+                sh 'docker build -t $DOCKER_IMAGE:latest .'
             }
         }
 
@@ -71,11 +73,11 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-cred',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
                 )]) {
                     sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    echo $PASS | docker login -u $USER --password-stdin
                     docker push $DOCKER_IMAGE:latest
                     docker logout
                     '''
@@ -85,10 +87,11 @@ pipeline {
 
         stage('Deploy to EKS') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-creds'
-                ]]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'aws-creds',
+                    usernameVariable: 'AWS_ACCESS_KEY_ID',
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
                     sh '''
                     aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name mycluster
                     kubectl apply -f deployment.yml
@@ -100,10 +103,6 @@ pipeline {
     }
 
     post {
-        always {
-            cleanWs()
-        }
-
         success {
             emailext(
                 subject: "SUCCESS: ${env.JOB_NAME}",
