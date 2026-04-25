@@ -91,13 +91,13 @@
         <repository>
             <id>maven-releases</id>
             <name>maven Releases</name>
-            <url>http://100.54.135.231:8081/repository/maven-releases/</url>
+            <url>http://44.222.145.217:8081/repository/maven-releases/</url>
         </repository>
 
         <snapshotRepository>
             <id>maven-snapshots</id>
             <name>maven Snapshots</name>
-            <url>http://100.54.135.231:8081/repository/maven-snapshots/</url>
+            <url>http://44.222.145.217:8081/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 
