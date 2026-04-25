@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'maven3'
+        jdk 'jdk8'
+    }
+
     environment {
         SONARQUBE_ENV = 'sq'
         DOCKER_IMAGE = "rajeshtutta123/train_ticket_booking"
@@ -10,9 +15,10 @@ pipeline {
 
     stages {
 
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/rajeshtutta/train_ticket_booking'
+                git branch: 'main',
+                    url: 'https://github.com/rajeshtutta/train_ticket_booking'
             }
         }
 
@@ -22,20 +28,13 @@ pipeline {
             }
         }
 
-        stage('JENKINS TO NEXUS') {
+        stage('Deploy to Nexus') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-creds',
-                    usernameVariable: 'NEXUS_USER',
-                    passwordVariable: 'NEXUS_PASS'
+                configFileProvider([configFile(
+                    fileId: 'maven-settings-id',
+                    variable: 'MAVEN_SETTINGS'
                 )]) {
-                    withMaven(
-                        maven: 'maven3',
-                        jdk: 'jdk21',
-                        globalMavenSettingsConfig: 'maven-settings-id'
-                    ) {
-                        sh 'mvn deploy -DskipTests'
-                    }
+                    sh 'mvn deploy -s $MAVEN_SETTINGS -DskipTests'
                 }
             }
         }
@@ -44,7 +43,7 @@ pipeline {
             steps {
                 withSonarQubeEnv("${SONARQUBE_ENV}") {
                     sh '''
-                    mvn sonar:sonar \
+                    mvn clean verify sonar:sonar \
                     -Dsonar.projectKey=train-ticket \
                     -Dsonar.projectName=train-ticket
                     '''
@@ -54,7 +53,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 3, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -62,7 +61,9 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE:latest .'
+                sh '''
+                docker build -t $DOCKER_IMAGE:latest .
+                '''
             }
         }
 
@@ -70,11 +71,11 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-cred',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                    echo $PASS | docker login -u $USER --password-stdin
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
                     docker push $DOCKER_IMAGE:latest
                     docker logout
                     '''
@@ -84,13 +85,12 @@ pipeline {
 
         stage('Deploy to EKS') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'aws-creds',
-                    usernameVariable: 'AWS_ACCESS_KEY_ID',
-                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                )]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds'
+                ]]) {
                     sh '''
-                    aws eks update-kubeconfig --region us-east-1 --name mycluster
+                    aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name mycluster
                     kubectl apply -f deployment.yml
                     kubectl apply -f service.yml
                     '''
@@ -100,6 +100,10 @@ pipeline {
     }
 
     post {
+        always {
+            cleanWs()
+        }
+
         success {
             emailext(
                 subject: "SUCCESS: ${env.JOB_NAME}",
