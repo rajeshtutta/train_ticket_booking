@@ -115,4 +115,4 @@ jobs:
               -p 8080:8080 \
               ${{ secrets.DOCKER_USERNAME }}/train_ticket_booking:latest
 
-            docker ps
+            docker ps -a
