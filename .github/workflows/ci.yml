@@ -44,6 +44,13 @@ jobs:
       - name: Package WAR
         run: mvn package
 
+      - name: SonarQube Analysis
+        run: |
+          mvn sonar:sonar \
+          -Dsonar.projectKey=Train-Ticket-Booking \
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
       - name: Upload WAR Artifact
         uses: actions/upload-artifact@v4
         with:
