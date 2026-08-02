@@ -34,3 +34,9 @@ jobs:
 
       - name: Build Application
         run: mvn clean package
+
+      - name: Upload WAR File
+        uses: actions/upload-artifact@v4
+        with:
+          name: TrainBook-WAR
+          path: target/*.war
