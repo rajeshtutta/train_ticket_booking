@@ -74,6 +74,14 @@ jobs:
         run: |
             docker push ${{ secrets.DOCKER_USERNAME }}/train_ticket_booking:latest
 
+            docker pull rajeshtutta123/train_ticket_booking:latest
+
+            docker stop train-ticket-app || true
+
+            docker rm train-ticket-app || true
+
+            docker run -d --name train-ticket-app -p 8080:8080 rajeshtutta123/train_ticket_booking:latest
+
       - name: Upload WAR Artifact
         uses: actions/upload-artifact@v4
         with:
