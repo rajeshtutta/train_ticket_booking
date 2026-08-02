@@ -67,6 +67,10 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/train_ticket_booking:latest .
+
       - name: Upload WAR Artifact
         uses: actions/upload-artifact@v4
         with:
