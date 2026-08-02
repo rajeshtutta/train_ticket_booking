@@ -14,6 +14,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
 
       - name: Checkout Repository
@@ -26,16 +29,22 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Verify Java Version
+      - name: Verify Java
         run: java -version
 
-      - name: Verify Maven Version
+      - name: Verify Maven
         run: mvn -version
 
-      - name: Build Application
-        run: mvn clean package
+      - name: Compile Project
+        run: mvn clean compile
 
-      - name: Upload WAR File
+      - name: Run Unit Tests
+        run: mvn test
+
+      - name: Package WAR
+        run: mvn package
+
+      - name: Upload WAR Artifact
         uses: actions/upload-artifact@v4
         with:
           name: TrainBook-WAR
