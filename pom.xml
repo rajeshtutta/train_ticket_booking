@@ -10,14 +10,14 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>war</packaging>
 
-    <!-- ✅ PROPERTIES -->
+    <!--  PROPERTIES -->
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <!-- ✅ BUILD -->
+    <!-- BUILD -->
     <build>
         <sourceDirectory>src</sourceDirectory>
 
@@ -76,10 +76,10 @@
         </plugins>
     </build>
 
-    <!-- ✅ DEPENDENCIES -->
+    <!-- DEPENDENCIES -->
     <dependencies>
 
-        <!-- 🔥 REQUIRED FIX (Servlet API) -->
+        <!-- REQUIRED FIX (Servlet API) -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -117,7 +117,7 @@
 
     </dependencies>
 
-    <!-- ✅ NEXUS -->
+    <!-- NEXUS -->
     <distributionManagement>
         <repository>
             <id>maven-releases</id>
